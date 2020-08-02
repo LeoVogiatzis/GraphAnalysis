@@ -1,10 +1,9 @@
-import pandas as pd
-import numpy as np
-import random
-import networkx as nx
-import collections
 import glob
-from tqdm import tqdm
+import random
+
+import networkx as nx
+import numpy as np
+import pandas as pd
 
 
 def read_csv_files():
@@ -70,14 +69,13 @@ def read_csv_files():
     # for index, value in dates.iterrows():
     #     pass
 
-
-
     # for index, row in all_dfs.iterrows():
     return G, all_dfs
 
 
 def main():
-    graph, all_dfs= read_csv_files()
+    graph, all_dfs = read_csv_files()
+
 
 if __name__ == '__main__':
     main()

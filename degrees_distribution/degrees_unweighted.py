@@ -1,11 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from py2neo import Graph
 try:
     from degrees import *
 except ImportError:
     from .degrees import *
+
 
 def main():
     graph = read_from_neo4j_database()
@@ -59,7 +56,7 @@ def main():
 
     jac_simmilarity(total_attacks, total_trades, total_messages)
 
-    x=1
+    x = 1
 
 
 if __name__ == '__main__':

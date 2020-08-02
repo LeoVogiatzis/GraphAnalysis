@@ -1,25 +1,17 @@
-import community
-import networkx as nx
-import matplotlib.pyplot as plt
-import pandas as pd
 import glob
-import ujson
-from collections import defaultdict
-import itertools
-import sys
+
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
-import scipy
-from scipy.sparse import csr_matrix
-from scipy.sparse import csgraph
-from sklearn.cluster import KMeans
+import pandas as pd
 
 float_formatter = lambda x: "%.3f" % x
-np.set_printoptions(formatter={'float_kind':float_formatter})
+np.set_printoptions(formatter={'float_kind': float_formatter})
 from sklearn.datasets.samples_generator import make_circles
 from sklearn.cluster import SpectralClustering, KMeans
-from sklearn.metrics import pairwise_distances
 
 import seaborn as sns
+
 sns.set()
 
 
@@ -96,7 +88,7 @@ def spectral_clustering(g_directed):
     print('eigenvectors:')
     print(v)
     i = np.where(e < 0.5)[0]
-    x=1
+    x = 1
     U = np.array(v[:, i[1]])
 
     km = KMeans(init='k-means++', n_clusters=3)

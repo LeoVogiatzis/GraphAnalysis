@@ -1,5 +1,3 @@
-from py2neo import Graph
-
 try:
     from centrality_measures import *
 except ImportError:

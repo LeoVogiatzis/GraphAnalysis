@@ -37,6 +37,8 @@ def main():
     G, all_dfs, labels = read_csv_files()
     measures_for_centrality(G)
 
+    # all_dfs.to_pickle("./aggregated_dflalala.pkl")
+
 
 if __name__ == '__main__':
     main()

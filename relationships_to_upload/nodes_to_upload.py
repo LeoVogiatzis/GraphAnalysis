@@ -1,11 +1,11 @@
+import glob
 import os
+
 import pandas as pd
 from py2neo import Graph, Node
-import glob
 
 file_names = glob.glob('../data_users_moves/*.csv')
 my_set = set()
-
 
 for file in file_names:
     filename = os.fsdecode(file)

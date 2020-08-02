@@ -1,13 +1,13 @@
 from collections import Counter
+from datetime import datetime
 
 import pandas as pd
+from IPython.display import display
 from py2neo import Graph
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
-from IPython.display import display
-from datetime import datetime
 
 
 def down_sample(df):

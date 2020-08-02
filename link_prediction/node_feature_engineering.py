@@ -1,10 +1,7 @@
 import glob
-import matplotlib.pyplot as plt
+
 import networkx as nx
-import numpy as np
 import pandas as pd
-from collections import Counter
-from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import MinMaxScaler
 
@@ -68,7 +65,7 @@ def graph_identification(graph):
     clustering = nx.average_clustering(graph)
     shortest_path = nx.average_shortest_path_length(graph)
     degree_hist = degree_distribution(graph)
-    if len(degree_hist)>10:
+    if len(degree_hist) > 10:
         methods.append('PA')
     elif clustering < 0.1:
         methods.append('SW_H')
@@ -111,16 +108,17 @@ def ml_classification_nodes(features, df_train, df_test):
 
 def main():
     graph, all_dfs, labels, g_undirected = read_csv_files()
-    histogram = degree_distribution(graph)
-    methods = graph_identification()
+    # histogram = degree_distribution(graph)
+    # methods = graph_identification()
     print(nx.info(graph))
     graph.nodes(data=True)
     df = pd.DataFrame(index=graph.nodes())
     print(df.head())
-    features, df_train, df_test = graph_features()
+    #  features, df_train, df_test = graph_features()
     df['Common Neighbors'] = df.index.map(lambda city: len(list(nx.common_neighbors(g_undirected, city[0], city[1]))))
-
+    x = 1
     df.to_pickle("./node_based_features")
+
 
 if __name__ == '__main__':
     main()

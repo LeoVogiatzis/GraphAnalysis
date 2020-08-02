@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from py2neo import Graph
-from sklearn.metrics import jaccard_score
 
 
 def read_from_neo4j_database():
@@ -264,4 +263,3 @@ def jac_simmilarity(total_attacks, total_trades, total_messages):
     plt.show()
 
     print(jac_attacks_messages, jac_attacks_trades, jac_messages_trades)
-

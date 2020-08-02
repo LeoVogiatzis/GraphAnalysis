@@ -2,8 +2,8 @@ import glob
 import json
 import os
 import sys
-import sys
 from datetime import datetime
+
 try:
     from create_rels_from_txt import create_relations
 except ImportError:

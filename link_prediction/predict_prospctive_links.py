@@ -1,9 +1,14 @@
 import glob
-
+import random
 import networkx as nx
+import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
+
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import MinMaxScaler
+
+import json
 
 def read_csv_files():
     """
@@ -31,15 +36,42 @@ def read_csv_files():
 
         df['type'] = rel_type
         df['weight'] = 1
+        df['label'] = 1
         all_dfs = pd.concat([all_dfs, df])
 
     graph = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
                                     create_using=nx.MultiDiGraph(name='Travian_Graph'))
     g_undirected = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
                                            create_using=nx.Graph(name='Travian_Graph'))
+    # Create negative samples ---!
+    source = all_dfs['id1'].tolist()
+    destination = all_dfs['id2'].tolist()
+    # combine all nodes in a list
+    node_list = source + destination
+    # remove duplicate items from the list
+    node_list = list(dict.fromkeys(node_list))
+    adj_G = nx.to_numpy_matrix(graph, nodelist=node_list)
+    # get unconnected node-pairs
+    all_unconnected_pairs = []
+    #   print(nx.non_edges(G))
+    ommisible_links_data = pd.DataFrame(nx.non_edges(graph)).sample(frac=1).reset_index(drop=True)
+    dates = pd.date_range('2009-12-01 00:00:00', '2009-12-31 23:59:59', periods=200000)
+    gen_df = ommisible_links_data.iloc[:200000, :]
+    gen_df.columns = ['id1', 'id2']
+    gen_df[['id1', 'id2']] = gen_df[['id1', 'id2']].applymap(np.int64)
+    gen_df['Timestamp'] = dates
+    gen_df['label'] = 0
+    gen_df['weight'] = 1
+    gen_df['type'] = random.choices(['attacks', 'messages', 'trades'], weights=(50, 25, 25), k=200000)
+    gen_df['Preferential_Attachment'] = 0
+    gen_df['Resource_allocation'] = 0
+
+    # Merge dataset with links that doesnt exist
+
+    # print(gen_df)
 
     labels = {e: graph.edges[e]['type'] for e in graph.edges}
-    return graph, all_dfs, labels, g_undirected
+    return graph, all_dfs, labels, g_undirected, gen_df
 
 
 def aggregated_dataset(all_dfs, g_undirected):
@@ -71,37 +103,6 @@ def calc_weeights_without_aggregate(all_dfs):
     return all_dfs
 
 
-def pad(df, calendar):
-    # create unique id
-    sales = df.copy()
-    # sales = df[df['date_num']<20190700]
-    sales['id'] = sales['item_id'].astype(str) + '_' + sales['store_id'].astype(str)
-    # #create new multi index
-    pad_index = pd.MultiIndex.from_product([sales['id'].unique(), calendar['date_num'].unique()],
-                                           names=['id', 'date_num'])
-    # #padding
-    padded = sales.set_index(['id', 'date_num']).reindex(pad_index).reset_index()
-    # #pivot
-    padded = padded.pivot(index='date_num', columns='id', values='sales')
-
-    # remove unnecessary values and filling NaNs with 0
-    for i in tqdm(padded.columns):
-        first_val = padded[i].first_valid_index()
-        last_val = padded[i].last_valid_index()
-        padded.loc[first_val:last_val, i].fillna(0, inplace=True)
-
-    padded = padded.stack().reset_index()
-    padded.rename(columns={padded.columns[-1]: 'sales'}, inplace=True)
-    sales.drop(columns=sales.columns[sales.columns.isin(
-        ['sales', 'prices', 'date_num', 't_dw', 't_dm', 't_dy', 't_wm', 't_wy', 't_my', 't_y', 't_w_end'])],
-               inplace=True)
-    # test
-    sales.drop_duplicates(inplace=True)
-    sales = sales.merge(padded, on='id', how='left')
-
-    return sales[sales.columns[~sales.columns.isin(['id'])]]
-
-
 def generate_timestamps():
     df = pd.read_pickle("./aggregated_df.pkl")
 
@@ -124,87 +125,75 @@ def map_predictions_to_df(predictions, row):
         return predictions[(row['id2'], row['id1'])]
 
 
-def main():
-    graph, all_dfs, labels, g_undirected = read_csv_files()
-
-    # all_dfs.to_pickle("./aggregated_dflalala.pkl")
-
-
+def link_scores(graph, all_dfs, labels, g_undirected):
     lst = []
     lst2 = []
-    # predictions1 = nx.preferential_attachment(g_undirected, g_undirected.edges())
-    #
-    # [lst.append((u, v, p)) for u, v, p in predictions1]
-    # predictions1 = {(k, v): n for k, v, n in lst}
-    #
-    # all_dfs['preferential'] = all_dfs.apply(lambda x: map_predictions_to_df(predictions1, x), axis=1)
-    #
-    # predictions3 = nx.resource_allocation_index(g_undirected, g_undirected.edges())
-    #
-    # try:
-    #     [lst2.append((u, v, p)) for u, v, p in predictions3]
-    #     predictions3 = {(k, v): n for k, v, n in lst2}
-    #
-    #     all_dfs['Resource_allocation'] = all_dfs.apply(lambda x: map_predictions_to_df(predictions3, x), axis=1)
-    #
-    # except ZeroDivisionError:
-    #     print("ZeroDivisionError: float division by zero")
+    predictions1 = nx.preferential_attachment(g_undirected, g_undirected.edges())
+
+    [lst.append((u, v, p)) for u, v, p in predictions1]
+    predictions1 = {(k, v): n for k, v, n in lst}
+
+    all_dfs['Preferential_Attachment'] = all_dfs.apply(lambda x: map_predictions_to_df(predictions1, x), axis=1)
+
+    predictions3 = nx.resource_allocation_index(g_undirected, g_undirected.edges())
+
+    try:
+        [lst2.append((u, v, p)) for u, v, p in predictions3]
+        predictions3 = {(k, v): n for k, v, n in lst2}
+
+        all_dfs['Resource_allocation'] = all_dfs.apply(lambda x: map_predictions_to_df(predictions3, x), axis=1)
+
+    except ZeroDivisionError:
+        print("ZeroDivisionError: float division by zero")
+
+    return all_dfs
 
 
-    # all_dfs['Common Neighbors'] = all_dfs['id1'].map(lambda city: (list(nx.common_neighbors(graph, city[0], city[1]))))
+def new_connections_predictions(dataset):
+    df_train = dataset[~pd.isnull(dataset['label'])]
+    df_test = dataset[pd.isnull(dataset['label'])]
+    features = ['type', 'weight', 'Preferential_Attachment', 'Resource_allocation', 'betweeness_centrality',
+                'betweeness_centrality fot id2', 'closeness_centrality', 'closeness_centrality for id2']
+    X_train = df_train[features]
+    Y_train = df_train['label']
+    X_test = df_test[features]
+    scaler = MinMaxScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    clf = MLPClassifier(hidden_layer_sizes=[10, 5], alpha=5,
+                        random_state=0, solver='lbfgs', verbose=0)
+    clf.fit(X_train_scaled, Y_train)
+    test_proba = clf.predict_proba(X_test_scaled)[:, 1]
+    predictions = pd.Series(test_proba, X_test.index)
+    target = dataset['label']
+    target['prob'] = [predictions[x] for x in target.index]
+    return target['prob']
 
 
-    predictions1 = nx.common_neighbors(g_undirected, g_undirected.edges())
+def main():
+    # graph, all_dfs, labels, g_undirected, gen_df = read_csv_files()
+    # all_dfs = link_scores(graph, all_dfs, labels, g_undirected)
+    # dataset = pd.concat([all_dfs, gen_df])
+    #centrality_measures(g_undirected, graph, dataset)
+    #dataset = dataset.sort_values(by='Timestamp', ascennding= True)
+    dataset = pd.read_pickle('./dataset_model2.pkl')
+    dataset = dataset.set_index(['id1', 'id2'])
+    target = new_connections_predictions(dataset)
+    lst = [ ]
+    [lst.append((u, v, p)) for u, v, p in dataset]
+    predictions = {(k, v): n for k, v, n in lst}
+    # pred = json.loads(predictions)
 
+    with open('result.json', 'w') as fp:
+        json.dump(predictions, fp)
 
-
-
-    [lst2.append((u, v, p)) for u, v, p in predictions2]
-    predictions1 = {(k, v): n for k, v, n in lst2}
-
-    all_dfs['Common_neighboors'] = all_dfs.apply(lambda x: map_predictions_to_df(predictions2, x), axis=1)
-
-
-    adamic_adar = list(all_dfs=nx.adamic_adar_index(g_undirected, g_undirected.edges()))
-    all_dfs = pd.DataFrame(index=[(x[0], x[1]) for x in adamic_adar])
-    all_dfs['adamic_adar'] = [x[2] for x in adamic_adar]
-
-
-    all_dfs['Common Neighbors'] = all_dfs.index.map(
-        lambda id: len(list(nx.common_neighbors(g_undirected, id[0], id[1]))))
-    df = pd.read_pickle("./aggregated_df.pkl")
-    # dict = g_undirected.edge_betweenness_centrality()
-
-    # values_df = pd.DataFrame(dict.items(), columns=['id', 'Score'])
-
-    preferential_attachment = list(nx.preferential_attachment(g_undirected))
-    all_dfs = pd.DataFrame(index=[(x[0], x[1]) for x in preferential_attachment])
-    all_dfs['preferential_attachment'] = [x[2] for x in preferential_attachment]
-
-    all_dfs['Common Neighbors'] = all_dfs.index.map(
-        lambda id: len(list(nx.common_neighbors(g_undirected, id[0], id[1]))))
+    x = 1
 
 
 if __name__ == '__main__':
     main()
 
-    # graph.edges(data=True)
-    # df = pd.DataFrame(index=graph.edges()).reset_index()
-    # df['weight'] = pd.Series(nx.get_edge_attributes(graph, 'weight'))
+    # all_dfs['Common Neighbors'] = all_dfs['id1'].map(lambda city: (list(nx.common_neighbors(graph, city[0], city[1]))))
 
-    # all_dfs = all_dfs.sort_values(by='Timestamp', ascending=True)
-    # all_dfs = all_dfs.groupby(['id1', 'id2', 'label'], as_index=False)['weight'].sum()
-    # all_dfs = all_dfs.set_index(['id1', 'id2'])
-
-    # all_dfs = all_dfs.groupby(['Timestamp', 'label'], as_index=False)['weight'].sum()
-    # all_dfs = all_dfs.index.names['ids']
-    # all_dfs.index.names = ['Ticker', all_dfs.index.names[1]]
-    # all_dfs.set_index('name', inplace=True)
-    # all_dfs = all_dfs.sort_values(by='Timestamp', ascending=True).reset_index(['id1', 'id2'])
-    # all_dfs = all_dfs.groupby(['label'], as_index=False)['weight'].sum().reset_index()
-    # all_dfs = all_dfs.set_index(['id1', 'id2'], inplace=True, append=True, drop=False)
-    # machine_learning(graph, all_dfs)
-
-    # all_dfs['preferential attachment'] = [i[2] for i in nx.preferential_attachment(g_undirected, all_dfs.index)]
-    # all_dfs = all_dfs.groupby(['label', 'preferential attachment'], as_index=False)['weight'].sum()
-    # x=1
+    # predictions1 = nx.common_neighbors(g_undirected, g_undirected.edges())
+    # df = pd.read_pickle("./dataset_model.pkl")

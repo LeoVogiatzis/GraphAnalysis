@@ -1,10 +1,10 @@
-import pandas as pd
-from py2neo import Graph
-from datetime import datetime
-
+import glob
 import json
 import sys
-import glob
+from datetime import datetime
+
+import pandas as pd
+from py2neo import Graph
 
 
 def read_config():

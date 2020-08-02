@@ -1,9 +1,7 @@
-from py2neo import Graph
 try:
     from centrality_measures import *
 except ImportError:
     from .centrality_measures import *
-
 
 
 def main():
@@ -26,7 +24,10 @@ def main():
     closeness_centrality = closeness(graph)
 
     plots_for_measures(attacks_centrality, attacks_centrality_prob, trades_centrality, trades_centrality_prob,
-                       messages_centrality, messages_centrality_prob, out_attacks, in_attacks, out_trades, in_trades, out_messages, in_messages, closeness_centrality, pagerank_score, pagerank_for_attacks_damp, pagerank_for_attacks, pagerank_for_trades_damp, pagerank_for_trades, pagerank_for_messages_damp, pagerank_for_messages)
+                       messages_centrality, messages_centrality_prob, out_attacks, in_attacks, out_trades, in_trades,
+                       out_messages, in_messages, closeness_centrality, pagerank_score, pagerank_for_attacks_damp,
+                       pagerank_for_attacks, pagerank_for_trades_damp, pagerank_for_trades, pagerank_for_messages_damp,
+                       pagerank_for_messages)
 
 
 if __name__ == '__main__':

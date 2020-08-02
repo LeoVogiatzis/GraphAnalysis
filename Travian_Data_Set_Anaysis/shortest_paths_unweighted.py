@@ -2,7 +2,6 @@ from datetime import datetime
 
 import ujson
 from py2neo import Graph
-import pandas as pd
 
 
 def shortest_path(graph, starttime):
@@ -71,7 +70,7 @@ def main():
     df = shortest_path3(graph, starttime)
     df.to_pickle("./shortespath_neo4j.pkl")
 
-    #df = pd.read_pickle("./shortespath_neo4j.pkl")
+    # df = pd.read_pickle("./shortespath_neo4j.pkl")
 
 
 if __name__ == '__main__':

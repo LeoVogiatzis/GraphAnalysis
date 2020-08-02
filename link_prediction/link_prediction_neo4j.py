@@ -1,9 +1,4 @@
 from py2neo import Graph
-import json
-import pandas as pd
-from pandas import DataFrame
-import sys
-import matplotlib.pyplot as plt
 
 
 def best_users(graph):
@@ -21,8 +16,8 @@ def best_users(graph):
 def adamic_adar_alg(rel_type, graph):
     if rel_type != '':
         sc_per_type = graph.run(
-            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.adamicAdar(p1, p2, {relationshipQuery: "%s"}) AS score,p1.id,p2.id'% rel_type,
-        rel_type=rel_type)
+            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.adamicAdar(p1, p2, {relationshipQuery: "%s"}) AS score,p1.id,p2.id' % rel_type,
+            rel_type=rel_type)
         return sc_per_type.to_data_frame()
     else:
         sc_per_user = graph.run(
@@ -32,7 +27,9 @@ def adamic_adar_alg(rel_type, graph):
 
 def common_neighbors(rel_type, graph):
     if rel_type != '':
-        sc_common_per_type = graph.run('MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.commonNeighbors(p1, p2, {relationshipQuery: "%s"}) AS score LIMIT 10'% rel_type, rel_type=rel_type)
+        sc_common_per_type = graph.run(
+            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.commonNeighbors(p1, p2, {relationshipQuery: "%s"}) AS score LIMIT 10' % rel_type,
+            rel_type=rel_type)
         return sc_common_per_type.to_data_frame()
     else:
         sc_common_per_user = graph.run(
@@ -43,10 +40,12 @@ def common_neighbors(rel_type, graph):
 def linkprediction_preferectialAttachment(rel_type, graph):
     if rel_type != '':
         sc_preferential_per_type = graph.run(
-            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.preferentialAttachment(p1, p2, {relationshipQuery: "%s"}) AS score'% rel_type, rel_type=rel_type).to_data_frame()
+            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.preferentialAttachment(p1, p2, {relationshipQuery: "%s"}) AS score' % rel_type,
+            rel_type=rel_type).to_data_frame()
         return sc_preferential_per_type.to_data_frame()
     else:
-        sc_preferential_per_user = graph.run('MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.preferentialAttachment(p1, p2) AS score').to_data_frame()
+        sc_preferential_per_user = graph.run(
+            'MATCH (p1:User) MATCH (p2:User) RETURN algo.linkprediction.preferentialAttachment(p1, p2) AS score').to_data_frame()
         return sc_preferential_per_user
 
 
@@ -55,7 +54,8 @@ def resourceAllocation(rel_type, graph):
         sc_resourceAllocation_per_type = graph.run('''
         MATCH (p1:Person {name: 'Michael'})
         MATCH (p2:Person {name: 'Karin'})
-        RETURN algo.linkprediction.resourceAllocation(p1, p2, {relationshipQuery: "s"}) AS score '''% rel_type, rel_type=rel_type).to_data_frame()
+        RETURN algo.linkprediction.resourceAllocation(p1, p2, {relationshipQuery: "s"}) AS score ''' % rel_type,
+                                                   rel_type=rel_type).to_data_frame()
         return sc_resourceAllocation_per_type
     else:
         sc_resourceAllocation_per_user = graph.run('''
@@ -71,7 +71,7 @@ def linkpred_sameCommunity(rel_type, graph):
         MATCH (p1:User)
         MATCH (p2:User) 
         RETURN algo.linkprediction.sameCommunity(p1, p2) AS score 
-        '''% rel_type, rel_type=rel_type).to_data_frame()
+        ''' % rel_type, rel_type=rel_type).to_data_frame()
         return sc_sameCommunity_per_type
     else:
         sc_sameCommunity_per_user = graph.run('''
@@ -86,7 +86,8 @@ def total_neighbors(rel_type, graph):
         sc_totalNeighbors_per_type = graph.run('''
         MATCH (p1:Person {name: 'Michael'})
         MATCH (p2:Person {name: 'Karin'})
-        RETURN algo.linkprediction.totalNeighbors(p1, p2, {relationshipQuery: "%s"}) AS score'''% rel_type, rel_type=rel_type).to_data_frame()
+        RETURN algo.linkprediction.totalNeighbors(p1, p2, {relationshipQuery: "%s"}) AS score''' % rel_type,
+                                               rel_type=rel_type).to_data_frame()
         return sc_totalNeighbors_per_type
     else:
         sc_totalNeighboors_per_user = graph.run('''
