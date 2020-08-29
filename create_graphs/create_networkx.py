@@ -45,7 +45,7 @@ def __read_csv_files():
 
     # pos = nx.spring_layout(G, k=10)
     # nx.draw(G, pos, with_labels=True)
-    labels = {e: g_directed.edges[e]['label'] for e in G.edges}
+    labels = {e: g_directed.edges[e]['label'] for e in g_directed.edges}
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     # G = nx.from_pandas_edgelist(edges, edge_attr=True)
     g_undirected = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,

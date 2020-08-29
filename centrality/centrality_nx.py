@@ -5,7 +5,7 @@ import networkx as nx
 import pandas as pd
 
 sys.path.append('../')
-from create_graphs.create_networkx import read_csv_files
+from create_graphs.create_networkx import __read_csv_files
 
 
 def measures_for_centrality(G):
@@ -34,7 +34,7 @@ def measures_for_centrality(G):
 
 
 def main():
-    G, all_dfs, labels = read_csv_files()
+    G, g_undirected, all_dfs, labels = __read_csv_files()
     measures_for_centrality(G)
 
 
