@@ -122,69 +122,58 @@ def label_propagation(unGraph):
 
 def k_clique(unGraph, k):
     print('K-Clique')
-    print('Computing parition.....')
+    
+    print('Computing parition for ' + str(k) + '-sized cliques.....')
     t = datetime.now()
     comms = list(nx.algorithms.community.k_clique_communities(unGraph, k))
     time_taken = datetime.now() - t
-    print(comms)
+    
     print('Converting results.....')
     count = 0
     ress = dict()
     for item in comms:
         ress[str(count)] = list(item)
         count += 1
-    print('ress')
-    print(ress)
-    print('values')
-    print(ress.values())
-    try:
-        m2 = community.modularity(ress.values(), unGraph)
-        print(m2)
-        print('*')
-    except Exception:
-        print('error')
 
+    print('Find and add nodes without a community.....')
+    no_community_nodes = list()
+    for node in unGraph.nodes():
+        for comm in comms:
+            if node in list(comm):
+                continue
+            no_community_nodes.append(node)
+
+    ress[str(count)] = list(no_community_nodes)
+
+    modularity = None
     print('Computing modularity.....')
     try:
         modularity = nx.algorithms.community.modularity(unGraph, ress.values())
-        print('modularity')
-        print('{:f}'.format(modularity))
-    except Exception:
-        print('error')
-    # print('Writing results.....')
-    # _fn = 'kclique_results_' + str(k) + 'perC.txt'
-    # with open(_fn, 'a') as f:
-    #     f.write(ujson.dumps(ress))
-    #     # f.write('modulariry= ' + str(modularity))
-    print('Writing results.....')
-    with open('label_propagation_results2222222.txt', 'a') as f:
-        f.write('Communities Computed: \n')
-        f.write(ujson.dumps(ress))
-        f.write('================================================================\n')
-        f.write('Information about computed partition: \n')
-        try:
-            f.write('modularity= ' + str(m2) + '\n')
-        except Exception: print('errorrrr')
-        try:
-            f.write('modularity= ' + str(modularity) + '\n')
-        except Exception: print('errorrrrrrrrrrrrrrrrrrrr')
-        f.write('time taken to compute: ' + str(time_taken) + '\n')
-        cnt = 0
-        for item in ress:
-            cnt+=1
-            f.write('For community ' + str(item) + ':\n')
-            subG = unGraph.subgraph(ress[item])
-            f.write('NumOfEdges '+str(len(subG.edges())) + '\n')
-            f.write('NumOfNodes '+str(len(subG.nodes())) + '\n')
-            f.write('Density of community (/subEdges) = '+str( len(subG.edges()) / len(subG.nodes())) + '\n')
-            f.write('Density of community (/totalEdges) = '+str( len(subG.edges()) / len(unGraph.edges())) + '\n')
-            f.write('Max node -> '+str(max(dict(subG.degree()).items(), key = lambda x : x[1])) + '\n')
-            f.write('Min node -> '+str(min(dict(subG.degree()).items(), key = lambda x : x[1])) + '\n')
-            if len(ress.keys())!=cnt:
-                f.write('Next community info===============================================')
-
+    except Exception as e:
+        print(repr(e))
+    
+    extract_results('kClique_' + str(k), unGraph, ress, time_taken, modularity)
+    
     print('Visualization.....')
     values = calc_color_values(unGraph, ress)    
+    
+    proc = False
+    if len(values)!=len(unGraph.nodes()):
+        print('len values' + str(len(values)))#4000
+        print('len nodes' + str(len(unGraph.nodes())))#4611
+        diff = len(unGraph.nodes())-len(values)#611
+        color = len(values)+1
+        non_exist = [color for i in range(diff)]
+        new_vals = values + non_exist
+        info = 'Nodes without a community: ' + str(diff) + '.\n with label: ' \
+            + str(color)
+        proc = True
+
+    if proc: 
+        print('Colors added')
+        values = new_vals
+
+    print(len(values))
     
     nx.draw_spring(unGraph, cmap = plt.get_cmap('jet'), node_color = values,
         node_size=20, with_labels=False)
@@ -270,16 +259,27 @@ def calc_color_values(graph, data):
                     values.append(int(k)) 
     return values
 
-def extract_results(alg_name, graph, data, time, modularity):
+def extract_results(alg_name, graph, data, time, modularity, **kwargs):
     _max_l = list() 
     _min_l = list()
+    error = False
+    if modularity is not None:
+        error = True
+    extra_text = kwargs.get('extra_text')
+
     print('Writing results.....')
     with open(alg_name + '_results.txt', 'a') as f:
         f.write('Communities Computed: \n')
         f.write(ujson.dumps(data))
         f.write('================================================================\n')
         f.write('Information about computed partition: \n')
-        f.write('modularity= ' + str('{:f}'.format(modularity)) + '\n')
+        try:
+            if error:
+                f.write('modularity= ' + str(modularity) + '\n')
+            else:
+                f.write('modularity= ' + str('{:f}'.format(modularity)) + ' or ' + str(modularity) + '\n')
+        except Exception as e3:
+            print(repr(e3))
         f.write('time taken to compute: ' + str(time) + '\n')
         cnt = 0
         d = 0
@@ -289,8 +289,6 @@ def extract_results(alg_name, graph, data, time, modularity):
             subG = graph.subgraph(data[item])
             f.write('NumOfEdges '+str(len(subG.edges())) + '\n')
             f.write('NumOfNodes '+str(len(subG.nodes())) + '\n')
-            f.write('Density of community (/subEdges) = '+str( len(subG.edges()) / len(subG.nodes())) + '\n')
-            f.write('Density of community (/totalEdges) = '+str( len(subG.edges()) / len(graph.edges())) + '\n')
             density = nx.classes.function.density(subG)
             d += density
             f.write('Density of community (/possible) = '+str(density) + '\n')
@@ -307,13 +305,17 @@ def extract_results(alg_name, graph, data, time, modularity):
         f.write('Max degree = ' + str(max(_max_l)) + '\n')
         f.write('Min degree = ' + str(min(_min_l)) + '\n')
         f.write('Average Density = ' + str(d/len(data)) + '\n')
+        if extra_text is not None:
+            print(extra_text)
+            f.write('Extra Info: \n')
+            f.write(extra_text)
 
 def main():
     g_directed, g_undirected, all_dfs, dir_labels, undir_labels = createGraphs()
     del g_directed, all_dfs, dir_labels, undir_labels
     print('Graph creation finished.....')
     
-    louvain(g_undirected)
+    # louvain(g_undirected)
     # working
 
     #working 
@@ -322,6 +324,7 @@ def main():
     # working
     # clauset_newman_moore(g_undirected)
 
+    k_clique(g_undirected, 8)
     k_clique(g_undirected, 7)
     k_clique(g_undirected, 6)
 
