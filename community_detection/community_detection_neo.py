@@ -12,14 +12,8 @@ def calc_color_values(graph, data):
     print('Calculate color values.....')
     values = []
     for i in graph.nodes():
-        print(i)
-        x=1
         for k,v in data.items():
-            print(v)
-            print(k)
             if str(i) in v:
-                if int(k)!=6:
-                    x=1
                 values.append(int(k)) 
                 break
     return values
@@ -33,7 +27,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
     extra_text = kwargs.get('extra_text', None)
 
     print('Writing results.....')
-    with open(alg_name + '_results3.txt', 'a') as f:
+    with open(alg_name + '_results10.txt', 'a') as f:
         f.write('Communities Computed: \n')
         f.write(ujson.dumps(data))
         f.write('================================================================\n')
@@ -43,8 +37,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
                 f.write('modularity= ' + str(modularity) + '\n')
             else:
                 f.write('modularity= ' + str('{:f}'.format(modularity)) + ' or ' + str(modularity) + '\n')
-        except Exception as e3:
-            print(repr(e3))
+        except Exception as e3: print(repr(e3))
         f.write('time taken to compute: ' + str(time) + '\n')
         cnt = 0
         d = 0
@@ -79,7 +72,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
             f.write('Extra Info: \n')
             f.write(extra_text)
 
-def visualize(graph, data):
+def visualize(alg_name, graph, data):
     print('Visualization.....')
     nx.draw_spring(graph, cmap = plt.get_cmap('jet'), node_color = data,
         node_size=10, with_labels=False)
@@ -90,7 +83,11 @@ def visualize(graph, data):
 
     nodes = list(graph.nodes())
     nodes.sort()
-    plt.scatter(nodes, data, c=data, s=10, cmap='viridis')
+    plt.margins(x=0)
+    plt.title(alg_name)
+    plt.xlabel('Nodes')
+    plt.ylabel('Community ID')
+    plt.scatter(nodes, data, c=data, s=10, cmap='jet')
     plt.show()
 
 def louvain(direction, graph):
@@ -118,31 +115,21 @@ def louvain(direction, graph):
     ''').to_data_frame()
 
     print('Convert graph to nx graph.....')
-    # g_directed = nx.from_pandas_edgelist(df=graph_query, source='n.id', target='m.id', edge_attr=True,
-    #     create_using=nx.MultiDiGraph(name='Travian_Graph'))
     nx_graph = nx.from_pandas_edgelist(df=graph_query, source='n.id', target='m.id', edge_attr=True,
         create_using=nx.MultiGraph(name='Travian_Graph'))
-    print(len(nx_graph.edges()))
-
+    
     modularity = None
     print('Computing modularity.....')
-    try:
-        modularity = nx.algorithms.community.modularity(nx_graph, results.values())
-        print(modularity)
+    try: modularity = nx.algorithms.community.modularity(nx_graph, results.values())
     except Exception as e: print(repr(e))
-    try:
-        modularity = community.modularity(results.values(), nx_graph)
-        print(modularity)
+    try: modularity = community.modularity(results.values(), nx_graph)
     except Exception as e: print(repr(e))
-    x=1
 
-    extract_results('neo_louvain', nx_graph, results, time_taken, modularity)
+    extract_results('neo_louvain'+direction, nx_graph, results, time_taken, modularity)
 
     values = calc_color_values(nx_graph, results)
-    print(values)
-    print(len(values))
-    x=1
-    visualize(nx_graph, values)
+    
+    visualize('Louvain ' + direction, nx_graph, values)
 
     print('Louvain finished.....')
 
@@ -157,7 +144,6 @@ def lp(direction, graph):
         YIELD nodeId, label
         RETURN algo.getNodeById(nodeId) as node, label
         ''').data()
-    print(louvain_query)
     time_taken = datetime.now() - t
 
     print('Converting results.....')
@@ -172,42 +158,33 @@ def lp(direction, graph):
     ''').to_data_frame()
 
     print('Convert graph to nx graph.....')
-    # g_directed = nx.from_pandas_edgelist(df=graph_query, source='n.id', target='m.id', edge_attr=True,
-    #     create_using=nx.MultiDiGraph(name='Travian_Graph'))
     nx_graph = nx.from_pandas_edgelist(df=graph_query, source='n.id', target='m.id', edge_attr=True,
         create_using=nx.MultiGraph(name='Travian_Graph'))
-    print(len(nx_graph.edges()))
-
+    
     modularity = None
     print('Computing modularity.....')
-    try:
-        modularity = nx.algorithms.community.modularity(nx_graph, results.values())
-        print(modularity)
+    try: modularity = nx.algorithms.community.modularity(nx_graph, results.values())
     except Exception as e: print(repr(e))
-    try:
-        modularity = community.modularity(results.values(), nx_graph)
-        print(modularity)
+    try: modularity = community.modularity(results.values(), nx_graph)
     except Exception as e: print(repr(e))
-    x=1
 
-    extract_results('neo_4lp'+direction, nx_graph, results, time_taken, modularity)
+    extract_results('neo_lp'+direction, nx_graph, results, time_taken, modularity)
 
     values = calc_color_values(nx_graph, results)
-    print(values)
-    print(len(values))
-    x=1
-    visualize(nx_graph, values)
+    
+    visualize('Label Propagation ' + direction, nx_graph, values)
 
     print('lp finished.....')
 
 def main():
-    direction = 'BOTH'
-    #accepted values = []
-    graph = Graph('127.0.0.1',password='gomugomuno13')
+    directions = ['BOTH', 'OUTCOMING', 'INCOMING']
+    
+    graph = Graph('127.0.0.1', password='gomugomuno13')
     tx = graph.begin()
-
-    louvain(direction, graph)    
-    # lp(direction, graph)
+    
+    for direction in directions:
+        louvain(direction, graph)    
+        lp(direction, graph)
 
 if __name__ == '__main__':
     main()

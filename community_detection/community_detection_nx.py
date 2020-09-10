@@ -8,11 +8,7 @@ from collections import defaultdict
 import itertools
 import sys
 import numpy as np
-import scipy
-from scipy.sparse import csr_matrix
-from scipy.sparse import csgraph
-from sklearn.cluster import KMeans
-from sklearn.cluster import SpectralClustering, spectral_clustering
+from sklearn.cluster import SpectralClustering
 from datetime import datetime
 
 def createGraphs():
@@ -37,7 +33,7 @@ def createGraphs():
         df['label'] = rel_type
 
         all_dfs = pd.concat([all_dfs, df])
-
+        
     g_directed = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
         create_using=nx.MultiDiGraph(name='Travian_Graph'))
 
@@ -65,12 +61,12 @@ def compute_louvain(unGraph):
     print('Computing modularity.....')
     modularity = nx.algorithms.community.modularity(unGraph, louvain_results.values())
 
-    extract_results('louvain2', unGraph, louvain_results, time_taken, modularity)
+    extract_results('louvain', unGraph, louvain_results, time_taken, modularity)
 
     print('Calculate color values.....')
     values = [partition.get(node) for node in unGraph.nodes()]
     
-    visualize(unGraph, values)
+    visualize('Louvain', unGraph, values)
 
     print('Louvain Finished.....')
 
@@ -92,11 +88,11 @@ def compute_label_propagation(unGraph):
     print('Computing modularity.....')
     modularity = nx.algorithms.community.modularity(unGraph, ress.values())
 
-    extract_results('label_propagation2', unGraph, ress, time_taken, modularity)
+    extract_results('label_propagation', unGraph, ress, time_taken, modularity)
 
     values = calc_color_values(unGraph, ress)  
 
-    visualize(unGraph, values)
+    visualize('Label Propagation', unGraph, values)
 
     print('Label Propagation Finished.....')
 
@@ -114,45 +110,25 @@ def compute_k_clique(unGraph, k):
         ress[str(count)] = list(item)
         count += 1
     
-    print('Find and add nodes without a community.....')
-    no_community_nodes = list()
-    is_in_partition = False
-    for node in unGraph.nodes():
-        for comm in ress.values():
-            if node in comm:
-                is_in_partition = True
-                break
-        if not is_in_partition: no_community_nodes.append(node)
-        if is_in_partition: is_in_partition = False
-        x = 1
-    
-    print(len(no_community_nodes))
-    x=1
-    ress[str(count)] = [int(node) for node in no_community_nodes]
-    # for node in no_community_nodes:
-    #     ress[str(count)] = list(int(node))
-    #     count+=1
-    len(ress.values())
     modularity = None
     print('Computing modularity.....')
-    try:
-        modularity = nx.algorithms.community.modularity(unGraph, ress.values())
-        print(modularity)
-    except Exception as e:
-        print(repr(e))
+    try: modularity = nx.algorithms.community.modularity(unGraph, ress.values())
+    except Exception as e: print(repr(e))
     
     extract_results('kClique_' + str(k), unGraph, ress, time_taken, modularity)
     
-    values = calc_color_values(unGraph, ress)    
-    print(values)
-    print(len(values))
+    values = []
+    for i in unGraph.nodes():
+        for key,value in ress.items():
+            if i in value:
+                values.append(int(key))
+                break    
+    
     proc = False
     info = ''
     if len(values)!=len(unGraph.nodes()):
-        print('len values' + str(len(values)))#4000
-        print('len nodes' + str(len(unGraph.nodes())))#4611
-        diff = len(unGraph.nodes())-len(values)#611
-        color = len(values)+1
+        diff = len(unGraph.nodes())-len(values)
+        color = len(ress.values())+1
         non_exist = [color for i in range(diff)]
         new_vals = values + non_exist
         info = 'Nodes without a community: ' + str(diff) + ' with label: ' + str(color) + '\n'
@@ -165,7 +141,7 @@ def compute_k_clique(unGraph, k):
     print(len(values))
     extract_results('kClique_' + str(k), unGraph, ress, time_taken, modularity, extra_text=info)
     
-    visualize(unGraph, values)
+    visualize('K-Clique for ' + str(k) + ' sized clusters', unGraph, values)
 
     print('K-Clique Finished.....')
 
@@ -177,27 +153,24 @@ def compute_clauset_newman_moore(unGraph):
     time_taken = datetime.now() - t
     
     print('Converting results.....')
-    res = []
     ress = dict()
     count=0
     for item in (c):
-        res.append(list(item))
         ress[str(count)] = list(item)
         count += 1
 
     print('Computing modularity.....')
     modularity = nx.algorithms.community.modularity(unGraph, ress.values())
         
-    extract_results('2CNM', unGraph, ress, time_taken, modularity)
+    extract_results('CNM', unGraph, ress, time_taken, modularity)
 
     values = calc_color_values(unGraph, ress)   
 
-    visualize(unGraph, values)
+    visualize('Clauset-Newman-Moore', unGraph, values)
 
     print('Clauset-Newman-Moore finished.....')
 
 def compute_spectral_clustering(unGraph, n_clusters):
-    # n_clusters = 20
     # np.set_printoptions(threshold=sys.maxsize)
 
     print('2Spectral Clustering for ' + str(n_clusters) + ' clusters.....')
@@ -211,27 +184,21 @@ def compute_spectral_clustering(unGraph, n_clusters):
         assign_labels="kmeans",random_state=0,n_clusters=n_clusters).fit_predict(A)
     time_taken = datetime.now() - t
 
-    visualize(unGraph, clusters)
+    visualize('Spectral Clustering ' + str(n_clusters), unGraph, clusters)
 
     print('Converting results.....')
     results = defaultdict(list)
     for node, cluster in zip(nodes, clusters):
         results[str(cluster)].append(node) 
-    print(results)
-
+    
     print('Computing modularity.....')
     modularity = None
-    flag = False
-    try: 
-        modularity = nx.algorithms.community.modularity(unGraph, results.values())  
-        print('modularity with values')
-        print(modularity)
-        flag = True
+    try: modularity = nx.algorithms.community.modularity(unGraph, results.values())  
     except Exception as e2: print(repr(e2))
     
     extract_results('spectral_clustering_' + str(n_clusters), unGraph, results, time_taken, modularity)
 
-    print('Spectral 2Clustering finished.....')
+    print('Spectral Clustering finished.....')
     
 def calc_color_values(graph, data):
     print('Calculate color values.....')
@@ -262,8 +229,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
                 f.write('modularity= ' + str(modularity) + '\n')
             else:
                 f.write('modularity= ' + str('{:f}'.format(modularity)) + ' or ' + str(modularity) + '\n')
-        except Exception as e3:
-            print(repr(e3))
+        except Exception as e3: print(repr(e3))
         f.write('time taken to compute: ' + str(time) + '\n')
         cnt = 0
         d = 0
@@ -275,7 +241,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
             f.write('NumOfNodes '+str(len(subG.nodes())) + '\n')
             density = nx.classes.function.density(subG)
             d += density
-            f.write('Density of community (/possible) = '+str(density) + '\n')
+            f.write('Density of community = '+str(density) + '\n')
             try:
                 _max = max(dict(subG.degree()).items(), key = lambda x : x[1])
                 _min = min(dict(subG.degree()).items(), key = lambda x : x[1])
@@ -298,7 +264,7 @@ def extract_results(alg_name, graph, data, time, modularity, **kwargs):
             f.write('Extra Info: \n')
             f.write(extra_text)
 
-def visualize(graph, data):
+def visualize(alg_name, graph, data):
     print('Visualization.....')
     nx.draw_spring(graph, cmap = plt.get_cmap('jet'), node_color = data,
         node_size=10, with_labels=False)
@@ -309,34 +275,35 @@ def visualize(graph, data):
 
     nodes = list(graph.nodes())
     nodes.sort()
-    plt.scatter(nodes, data, c=data, s=10, cmap='viridis')
+    
+    plt.scatter(nodes, data, c=data, s=10, cmap='jet')
+    plt.margins(x=0)
+    plt.title(alg_name)
+    plt.xlabel('Nodes')
+    plt.ylabel('Community ID')
     plt.show()
 
 def main():
     g_directed, g_undirected, all_dfs, dir_labels, undir_labels = createGraphs()
     del g_directed, all_dfs, dir_labels, undir_labels
     print('Graph creation finished.....')
+
+    k_values = [10, 9, 8, 7, 6]
+    spectral_values = [10, 20, 30, 50, 70, 100, 150, 200, 250,\
+                        300, 350, 400, 450, 500, 550, 600]
+
+    compute_louvain(g_undirected)
+
+    compute_label_propagation(g_undirected)
+
+    compute_clauset_newman_moore(g_undirected)
     
-    # compute_louvain(g_undirected)
+    for k in k_values:
+        compute_k_clique(g_undirected, k)
+    
+    for n_clusters in spectral_values:
+        compute_spectral_clustering(g_undirected, n_clusters)
 
-    # compute_label_propagation(g_undirected)
-
-    # compute_clauset_newman_moore(g_undirected)
-
-    # compute_k_clique(g_undirected, 10)
-    # compute_k_clique(g_undirected, 9)
-    # compute_k_clique(g_undirected, 8)
-    # compute_k_clique(g_undirected, 7)
-    # compute_k_clique(g_undirected, 6)
-
-    # compute_spectral_clustering(g_undirected, 10)
-    # compute_spectral_clustering(g_undirected, 20)
-    # compute_spectral_clustering(g_undirected, 30)
-    # compute_spectral_clustering(g_undirected, 50)
-    # compute_spectral_clustering(g_undirected, 70)
-    # compute_spectral_clustering(g_undirected, 100)
-    # compute_spectral_clustering(g_undirected, 150)
-    # compute_spectral_clustering(g_undirected, 200)
 
 if __name__ == '__main__':
     main()
