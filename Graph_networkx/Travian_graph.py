@@ -4,6 +4,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt
+import json
 
 def read_csv_files():
     """
@@ -40,7 +42,7 @@ def read_csv_files():
 
         df['label'] = rel_type
 
-        all_dfs = pd.concat([all_dfs, df])
+        all_dfs = pd.concat([all_dfs, df], ignore_index= True)
     G = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
                                 create_using=nx.DiGraph(name='Travian_Graph'))
     x=1
@@ -50,9 +52,10 @@ def read_csv_files():
     labels = {e: G.edges[e]['label'] for e in G.edges}
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     # G = nx.from_pandas_edgelist(edges, edge_attr=True)
-
+    g_undirected = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
+                                           create_using=nx.Graph(name='Travian_Graph'))
     # plt.show()
-    return G, all_dfs, labels
+    return G, all_dfs, labels, g_undirected
 
 
 def link_prediction(G):
@@ -72,18 +75,46 @@ def link_prediction(G):
     x = 1
 
 
-def important_characteristics_of_graph(G):
-    print("Eccentricity: ", nx.eccentricity(G))
-    print("Diameter: ", nx.diameter(G))
-    print("Radius: ", nx.radius(G))
-    print("Preiphery: ", list(nx.periphery(G)))
-    print("Center: ", list(nx.center(G)))
+def important_characteristics_of_graph(g_undirected):
+    #diameter = nx.diameter(G.to_undirected())
+    #print("Eccentricity: ",  nx.eccentricity(G))
+    #print("Eccentricity: ", {k: v for (k, v) in nx.eccentricity(G).items()})
+    #json.dump({k: v for (k, v) in nx.eccentricity(G).items()}, open("text.txt", 'w'))
+    #d2 = json.load(open("text.txt"))
+    #print(d2)
+    #print("Diameter: ", nx.diameter(G))
+    # print("Radius: ", nx.radius(G))
+    # print("Preiphery: ", list(nx.periphery(G)))
+    # print("Center: ", list(nx.center(G)))
 
-    weakly_component = [G.subgraph(c).copy() for c in sorted(nx.weakly_connected_components(G))]
+    nx.draw_networkx(g_undirected, with_labels=True, node_color='green')
+
+    # returns True or False whether Graph is connected
+    print(nx.is_connected(g_undirected))
+
+    # returns number of different connected components
+    print(nx.number_connected_components(g_undirected))
+
+    # returns list of nodes in different connected components
+    print(list(nx.connected_components(g_undirected)))
+
+    # returns number of nodes to be removed
+    # so that Graph becomes disconnected
+    print(nx.node_connectivity(g_undirected))
+
+    # returns number of edges to be removed
+    # so that Graph becomes disconnected
+    print(nx.edge_connectivity(g_undirected))
+
+    print(nx.average_shortest_path_length(g_undirected))
+    # returns average of shortest paths between all possible pairs of nodes
+
+    weakly_component = [g_undirected.subgraph(c).copy() for c in sorted(nx.weakly_connected_components(g_undirected))]
 
     largest_wcc = max(weakly_component)
 
     print(weakly_component)
+    x=1
 
 
 def reduce_mem_usage(df, verbose=True):
@@ -128,10 +159,55 @@ def aggregated_dataset(all_dfs, g_undirected):
     return aggregated_df
 
 
+def visi(G):
+    counts = pd.DataFrame(G.degree(), columns=['nodes', 'degrees'])
+    print(nx.is_strongly_connected(G))
+    print(nx.is_weakly_connected(G))
+    plt.style.use('fivethirtyeight')
+    ax = counts[:100].plot(kind='bar', x='nodes', y='degrees', legend=None, figsize=(15, 8))
+    ax.xaxis.set_label_text("")
+    plt.tight_layout()
+    plt.show()
+    # nx.draw_circular(G, with_labels=True)
+    # plt.show()
+
+    # options = {
+    #     'node_color': 'black',
+    #     'node_size': '10',
+    #     'line_color': 'grey',
+    #     'linewidths': 0,
+    #     'width': 0.1
+    # }
+    # nx.draw(G, **options)
+    # plt.show(c='r')
+
+    # degree_sequence = sorted([d for n, d in g_undirected.degree()], reverse=True)
+    # dmax = max(degree_sequence)
+    #
+    # plt.loglog(degree_sequence, "b-", marker="o")
+    # plt.title("Degree rank plot")
+    # plt.ylabel("degree")
+    # plt.xlabel("rank")
+    #
+    # # draw graph in inset
+    # plt.axes([0.45, 0.45, 0.45, 0.45])
+    # Gcc = g_undirected.subgraph(sorted(nx.connected_components(g_undirected), key=len, reverse=True)[0])
+    # pos = nx.spring_layout(Gcc)
+    # plt.axis("off")
+    # nx.draw_networkx_nodes(Gcc, pos, node_size=10)
+    # nx.draw_networkx_edges(Gcc, pos, alpha=0.4)
+    # plt.savefig('fig.png',bbox_inches='tight')
+
+
 def main():
-    G, all_dfs, labels = read_csv_files()
-    link_prediction(G)
-    important_characteristics_of_graph(G)
+    G, all_dfs, labels, g_undirected = read_csv_files()
+    # N, K = G.order(), G.size()
+    # avg_deg = float(K) / N
+    # print("Nodes: ", N)
+    # print("Edges: ", K)
+    # print("Average degree: ", avg_deg)
+    important_characteristics_of_graph(g_undirected)
+    #link_prediction(G)
 
 
 if __name__ == '__main__':

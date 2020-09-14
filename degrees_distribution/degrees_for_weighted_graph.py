@@ -5,7 +5,7 @@ except ImportError:
 
 
 def main():
-    graph = Graph('127.0.0.1', password='leoleoleo  ')
+    graph = Graph('127.0.0.1', password='leomamao97')
     print("Read from database")
     attacks = count_active_relationships_for_user("ATTACKS", graph)
     trades = count_active_relationships_for_user("TRADES", graph)
@@ -19,8 +19,9 @@ def main():
     total_messages = count_pas_active_relations("MESSAGES", graph)
 
     print('Calculate Active/Passive moves per user')
-    active_sums, passive_sums = total_interactions_per_user(attacks, trades, messages, attacks_p_df, trades_p_df,
-                                                            messages_p_df)
+    active_sums, passive_sums, max_total_attacks, min_total_attacks, avg_total_attacks, max_total_trades, \
+    min_total_trades, avg_total_trades, max_total_messages, min_total_messages, avg_total_messages = total_interactions_per_user(attacks, trades, messages, attacks_p_df, trades_p_df, messages_p_df,
+                                total_attacks, total_trades, total_messages)
     print('Calculate in/out degree per user')
 
     max_attacks, max_trades, max_messages, max_attacks_p_df, max_trades_p_df, max_messages_p_df = \
@@ -37,10 +38,13 @@ def main():
     average_messages = in_out_degree(total_attacks, total_trades, total_messages)
     plots(attacks, trades, messages, attacks_p_df, trades_p_df, messages_p_df, active_sums, passive_sums, total_attacks,
           total_trades, total_messages)
-    # plots_for_min_max_avg(max_attacks, max_trades, max_messages, max_attacks_p_df, max_trades_p_df, max_messages_p_df,
-    #                       min_attacks, min_trades, min_messages, min_attacks_p_df, min_trades_p_df, min_messages_p_df,
-    #                       average_at, average_tr, average_mes, average_pas_at, average_pas_tr, average_pas_mes)
-    # jac_simmilarity(total_attacks, total_trades, total_messages)
+    plots_for_min_max_avg(max_attacks, max_trades, max_messages, max_attacks_p_df, max_trades_p_df, max_messages_p_df,
+                          min_attacks, min_trades, min_messages, min_attacks_p_df, min_trades_p_df, min_messages_p_df,
+                          average_at, average_tr, average_mes, average_pas_at, average_pas_tr, average_pas_mes,
+                          max_sum, min_sum, average_sum, max_sum_passive, min_sum_passive, average_sum_passive,
+                          max_total_attacks, min_total_attacks, avg_total_attacks, max_total_trades, min_total_trades,
+                          avg_total_trades, max_total_messages, min_total_messages, avg_total_messages)
+    jac_simmilarity(total_attacks, total_trades, total_messages)
 
 
 if __name__ == '__main__':

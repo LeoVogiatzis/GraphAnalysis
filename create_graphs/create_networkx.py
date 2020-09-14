@@ -41,7 +41,7 @@ def __read_csv_files():
 
         all_dfs = pd.concat([all_dfs, df])
     g_directed = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
-                                         create_using=nx.DiGraph(name='Travian_Graph'))
+                                         create_using=nx.MultiDiGraph(name='Travian_Graph'))
 
     # pos = nx.spring_layout(G, k=10)
     # nx.draw(G, pos, with_labels=True)

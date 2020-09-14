@@ -56,8 +56,6 @@ def main():
 
     jac_simmilarity(total_attacks, total_trades, total_messages)
 
-    x = 1
-
 
 if __name__ == '__main__':
     main()

@@ -13,8 +13,12 @@ from sklearn.preprocessing import MinMaxScaler
 import json
 
 
+dataset2 = pd.read_pickle("dataset_features.pkl")
+
 dataset = pd.read_pickle('./dataset_model2.pkl')
 dataset = dataset.set_index(['id1', 'id2'])
+
+
 
 dataset['type'] = dataset['type'].astype('category')
 dataset['type'] = dataset['type'].cat.codes

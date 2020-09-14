@@ -251,7 +251,7 @@ def read_csv_files():
 
 
 def main():
-    # graph, all_dfs, labels = read_csv_files()
+    graph, all_dfs, labels = read_csv_files()
     dataset = pd.read_pickle('./dataset_model2.pkl')
 
 

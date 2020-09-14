@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from matplotlib.pyplot import subplot, figure
 from py2neo import Graph
+import pandas as pd
 
 
 def read_from_neo4j_database():
@@ -58,15 +59,20 @@ def total_interactions_per_user(attacks, trades, messages, attacks_p_df, trades_
     # sum per passive user
     passive_users = pd.concat([attacks_p_df, trades_p_df, messages_p_df])
     passive_sums = passive_users.groupby('userId').sum().reset_index()
-    max_total_attacks = total_attacks.loc[attacks['relationshipCount'].idxmax()][1]
+
+    max_total_attacks = total_attacks['relationshipCount'].max()
     min_total_attacks = total_attacks.loc[attacks['relationshipCount'].idxmin()][1]
-    avg_total_attacks = total_attacks.stack().mean()
-    max_total_trades = total_trades.loc[trades['relationshipCount'].idxmax()][1]
+    avg_total_attacks = total_attacks['relationshipCount'].mean()
+
+    max_total_trades = total_trades['relationshipCount'].max()
     min_total_trades = total_trades.loc[trades['relationshipCount'].idxmin()][1]
-    avg_total_trades = total_trades.stack().mean()
-    max_total_messages = total_messages.loc[total_messages['relationshipCount'].idxmax()][1]
+    avg_total_trades = total_trades['relationshipCount'].mean()
+
+    max_total_messages = total_messages['relationshipCount'].max()
     min_total_messages = total_messages.loc[total_messages['relationshipCount'].idxmin()][1]
-    avg_total_messages = total_messages.stack().mean()
+    avg_total_messages = total_messages['relationshipCount'].mean()
+
+
     return active_sums, passive_sums, max_total_attacks, min_total_attacks, avg_total_attacks, max_total_trades, \
            min_total_trades, avg_total_trades, max_total_messages, min_total_messages, avg_total_messages
 
@@ -92,7 +98,7 @@ def min_metrics_for_users(attacks, trades, messages, attacks_p_df, trades_p_df, 
     min_attacks = attacks_p_df.loc[attacks_p_df['relationshipCount'].idxmin()][1]
     min_trades = trades.loc[trades['relationshipCount'].idxmin()][1]
     min_messages = messages.loc[messages['relationshipCount'].idxmin()][1]
-    min_attacks_p_df = attacks_p_df.loc[attacks['relationshipCount'].idxmin()][1]
+    min_attacks_p_df = attacks.loc[attacks['relationshipCount'].idxmin()][1]
     min_trades_p_df = trades_p_df.loc[trades_p_df['relationshipCount'].idxmin()][1]
     min_messages_p_df = messages_p_df.loc[messages_p_df['relationshipCount'].idxmin()][1]
 
@@ -103,12 +109,12 @@ def average_metrics_for_users(attacks, trades, messages, attacks_p_df, trades_p_
     """
     Find the average for each user according to the type od edge
     """
-    average_at = attacks.stack().mean()
-    average_tr = trades.stack().mean()
-    average_mes = messages.stack().mean()
-    average_pas_at = attacks_p_df.stack().mean()
-    average_pas_tr = trades_p_df.stack().mean()
-    average_pas_mes = messages_p_df.stack().mean()
+    average_at = attacks['relationshipCount'].mean()
+    average_tr = trades['relationshipCount'].mean()
+    average_mes = attacks['relationshipCount'].mean()
+    average_pas_at = attacks_p_df['relationshipCount'].mean()
+    average_pas_tr = trades_p_df['relationshipCount'].mean()
+    average_pas_mes = messages_p_df['relationshipCount'].mean()
 
     return average_at, average_tr, average_mes, average_pas_at, average_pas_tr, average_pas_mes
 
@@ -118,11 +124,11 @@ def act_pass_metrics(active_sums, passive_sums):
     Find min, max, average regardless the the type of edge.
     """
     max_sum = active_sums.loc[active_sums['relationshipCount'].idxmax()][1]
-    min_sum = active_sums.loc[active_sums['relationshipCount'].idxmax()][1]
-    average_sum = active_sums.stack().mean()
+    min_sum = active_sums.loc[active_sums['relationshipCount'].idxmin()][1]
+    average_sum = active_sums['relationshipCount'].mean()
     max_sum_passive = passive_sums.loc[passive_sums['relationshipCount'].idxmax()][1]
-    min_sum_passive = passive_sums.loc[passive_sums['relationshipCount'].idxmax()][1]
-    average_sum_passive = active_sums.stack().mean()
+    min_sum_passive = passive_sums.loc[passive_sums['relationshipCount'].idxmin()][1]
+    average_sum_passive = passive_sums['relationshipCount'].mean()
 
     return max_sum, min_sum, average_sum, max_sum_passive, min_sum_passive, average_sum_passive
 
@@ -154,25 +160,54 @@ def plots(attacks, trades, messages, attacks_p_df, trades_p_df, messages_p_df, a
     and regardless the direction or not.
     """
     dict_helper = {
-        'Active Attacks Histogram': attacks,
-        'Active Trades Histogram': trades,
-        'Active Histogram': messages,
-        'Passive Messages Histogram': attacks_p_df,
-        'Passive Messages Histogram': trades_p_df,
-        'Passive Messages Histogram': messages_p_df,
-        'Active Sums Histogram': active_sums,
-        'Passive sums Histogram': passive_sums,
-        'In-out attacks per user': total_attacks,
-        'In-out  per user': total_trades,
-        'In-out messages per user': total_messages
+        'Active Attacks': attacks,
+        'Active Trades': trades,
+        'Active Messages': messages,
+        'Passive Attacks ': attacks_p_df,
+        'Passive Trades': trades_p_df,
+        'Passive Messages': messages_p_df
+    }
+    count = 0
+    dict2 = {
+        'Active moves': active_sums,
+        'Passive moves': passive_sums,
+        'bidirectional attacks': total_attacks,
+        'bidirectional trades': total_trades,
+        'bidirectional messages': total_messages
     }
 
-    for hist_title, values in dict_helper.items():
-        hist_plot = values['relationshipCount'].hist(bins=1000)
+    for hist_title, values in dict2.items():
+        count += 1
+        subplot(2, 3, count)
+        hist_plot = values['relationshipCount'].hist(bins=10)
         hist_plot.set_title(hist_title)
-        hist_plot.set_xlabel('Score Value')
-        hist_plot.set_ylabel("numbers")
-        plt.show()
+        hist_plot.set_xlabel('number of edges')
+        hist_plot.set_ylabel("number of nodes")
+        plt.margins(x=0)
+
+        plt.yscale('log', basey=10)
+        #plt.xscale('log')
+        #plt.xscale('log', basey=10)
+    plt.show()
+
+    # dict2 = {
+    #     'Active moves': active_sums,
+    #     'Passive moves': passive_sums,
+    #     'bidirectional attacks': total_attacks,
+    #     'bidirectional trades': total_trades,
+    #     'bidirectional messages': total_messages
+    # }
+    # for hist_title, values in dict2.items():
+    #     count += 1
+    #     subplot(2, 3, count)
+    #     hist_plot = values['relationshipCount'].hist(bins=1000)
+    #     hist_plot.set_title(hist_title)
+    #     hist_plot.set_xlabel('number of edges')
+    #     hist_plot.set_ylabel("number of nodes")
+    #     plt.margins(x=0)
+    #     plt.yscale('log', basey=10)
+    #
+    # plt.show()
 
 
 def plots_for_min_max_avg(max_attacks, max_trades, max_messages, max_attacks_p_df, max_trades_p_df, max_messages_p_df,
@@ -208,20 +243,57 @@ def plots_for_min_max_avg(max_attacks, max_trades, max_messages, max_attacks_p_d
     total_interactions_attacks.extend([max_total_attacks, min_total_attacks, avg_total_attacks])
     total_interactions_trades.extend([max_total_trades, min_total_trades, avg_total_trades])
     total_interactions_messages.extend([max_total_messages, min_total_messages, avg_total_messages])
-    type_of_users = {
-        "Attacks bar plot": attacks_active,
-        "Trades bar plot": attacks_passive,
-        "Messages bar plot": trades_active,
-        "Attacks passive bar plot": trades_passive,
-        "Trades passive bar plot": messages_active,
-        "Messages passive bar plot": messages_passive,
-        "Active sums plot": active_sums,
-        "Passive sums bar plot": passive_sums,
-        "Total attacks bar plot": total_interactions_attacks,
-        "Total trades bar plot": total_interactions_trades,
-        "Total messages bar plot": total_interactions_messages
+    #     type_of_users = {
+        #     "Attacks": attacks_active,
+        #     "Trades": attacks_passive,
+        #     "Messages": trades_active,
+        #     "Attacks": trades_passive,
+        #     "Trades": messages_active,
+        #     "Messages": messages_passive,
+        #     "Active users": active_sums,
+        #     "Passive users": passive_sums,
+        #     "Total attacks": total_interactions_attacks,
+        #     "Total trades": total_interactions_trades,
+        #     "Total messages": total_interactions_messages
+        # }
+
+        # count = 0
+    # for titles_of_plots, bar_plot in type_of_users.items():
+    #     count += 1
+    #     #subplot(2, 3, count)
+    #     objects = ['min', 'avg', 'max']
+    #     y_pos = np.arange(len(objects))
+    #     lst = sorted([float(i) for i in bar_plot])
+    #
+    #     plt.bar(y_pos, lst)
+    #     plt.title(titles_of_plots)
+    #     plt.xticks(y_pos, objects)
+    #     plt.xlabel('metrics')
+    #     plt.ylabel("count")
+    #     plt.margins(x=0)
+    #     # plt.yscale('log', basey=10)
+    #     plt.show()
+
+    count2 =0
+    dict2 = {
+        "Active sums": active_sums,
+        "Passive sums": passive_sums,
+        "Total attacks": total_interactions_attacks,
+        "Total trades": total_interactions_trades,
+        "Total messages": total_interactions_messages
     }
-    for titles_of_plots, bar_plot in type_of_users.items():
+    dict3 = {
+        "Attacks-out": attacks_active,
+        "Trades-out": attacks_passive,
+        "Messages-out": trades_active,
+        "Attacks-in": trades_passive,
+        "Trades-in": messages_active,
+        "Messages-in": messages_passive,
+     }
+
+    for titles_of_plots, bar_plot in dict3.items():
+        count2 += 1
+        subplot(2, 3, count2)
         objects = ['min', 'avg', 'max']
         y_pos = np.arange(len(objects))
         lst = sorted([float(i) for i in bar_plot])
@@ -231,7 +303,11 @@ def plots_for_min_max_avg(max_attacks, max_trades, max_messages, max_attacks_p_d
         plt.xticks(y_pos, objects)
         plt.xlabel('metrics')
         plt.ylabel("count")
-        plt.show()
+        plt.margins(x=0)
+
+        # plt.yscale('log', basey=10)
+        #plt.xscale('log', basey=10)
+    plt.show()
 
 
 def jac_simmilarity(total_attacks, total_trades, total_messages):

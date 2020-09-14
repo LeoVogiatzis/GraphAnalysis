@@ -8,6 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+import matplotlib.pyplot  as plt
+import seaborn as sn
 
 
 def down_sample(df):
@@ -102,11 +104,17 @@ def create_model(graph, starttime):
     predictions = classifier.predict(test_df[columns])
     y_test = test_df["label"]
 
-    display("Accuracy", accuracy_score(y_test, predictions))
-    display("Precision", precision_score(y_test, predictions))
-    display("Recall", recall_score(y_test, predictions))
+    print("Accuracy", accuracy_score(y_test, predictions))
+    print("Precision", precision_score(y_test, predictions))
+    print("Recall", recall_score(y_test, predictions))
 
     sorted(list(zip(columns, classifier.feature_importances_)), key=lambda x: x[1] * -1)
+    # get Confusion Matrix
+    confusion_matrix = pd.crosstab(y_test, y_pred, rownames=['Actual'], colnames=['Predicted'])
+    fig, ax = plt.subplots()
+    ax = sn.heatmap(confusion_matrix, annot=True, fmt='')
+    ax.set(yticks=[0, 2], xticks=[0, 1])
+    plt.show()
 
 
 def apply_graphy_features(data, rel_type, graph):
@@ -130,7 +138,7 @@ def apply_graphy_features(data, rel_type, graph):
 
 def main():
     starttime = datetime.now()
-    graph = Graph('127.0.0.1', password='leomamao971')
+    graph = Graph('127.0.0.1', password='leomamao123')
     create_model(graph, starttime)
     total_time = datetime.now() - starttime
     print(total_time)
