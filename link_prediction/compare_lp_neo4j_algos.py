@@ -5,7 +5,6 @@ import pandas as pd
 import json
 import os
 import glob
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from datetime import datetime
 import re
@@ -18,6 +17,12 @@ def intersection(l1, l2):
     tup1 = map(tuple, l1)
     tup2 = map(tuple, l2)
     return list(map(list, set(tup1).intersection(tup2)))
+
+def cosine_similarity(a, b):
+    res = 0
+    for index, value in enumerate(a):
+        res += len(set(value) & set(b[index])) / float(len(set(value) | set(b[index])))
+    return res/len(a)
 
 def calc_overlaps(df1, df2):
     time_now = datetime.now()
@@ -39,11 +44,11 @@ def split_df(df):
     return attacks, messages, trades
 
 for _file in os.listdir(os.getcwd()):
-    
-    if 'worst_in' in _file and \
+    if 'best_in' in _file and \
          'comparison' not in _file:
-
+        
         with open(_file, 'rb') as f:
+            
             print('Reading - ' + _file)
             s = f.read()
             user_dict = json.loads(s)
@@ -98,47 +103,6 @@ for _file in os.listdir(os.getcwd()):
                 del same
 print('Reading done.....')
 
-# print('Sorting values.....')
-# aa_attacks = aa_attacks.sort_index()
-# aa_messages = aa_messages.sort_index()
-# aa_trades = aa_trades.sort_index()
-# common_attacks = common_attacks.sort_index()
-# common_messages = common_messages.sort_index()
-# common_trades = common_trades.sort_index()
-# total_attacks = total_attacks.sort_index()
-# total_messages = total_messages.sort_index()
-# total_trades = total_trades.sort_index()
-# pref_attacks = pref_attacks.sort_index()
-# pref_messages = pref_messages.sort_index()
-# pref_trades = pref_trades.sort_index()
-# resource_attacks = resource_attacks.sort_index()
-# resource_messages = resource_messages.sort_index()
-# resource_trades = resource_trades.sort_index()
-# same_attacks = same_attacks.sort_index()
-# same_messages = same_messages.sort_index()
-# same_trades = same_trades.sort_index()
-
-# print('Reshaping values.....')
-# aa_attacks = aa_attacks.values.reshape(1, -1)
-# aa_messages = aa_messages.values.reshape(1, -1)
-# aa_trades = aa_trades.values.reshape(1, -1)
-# common_attacks = common_attacks.values.reshape(1, -1)
-# common_messages = common_messages.values.reshape(1, -1)
-# common_trades = common_trades.values.reshape(1, -1)
-# total_attacks = total_attacks.values.reshape(1, -1)
-# total_messages = total_messages.values.reshape(1, -1)
-# total_trades = total_trades.values.reshape(1, -1)
-# pref_attacks = pref_attacks.values.reshape(1, -1)
-# pref_messages = pref_messages.values.reshape(1, -1)
-# pref_trades = pref_trades.values.reshape(1, -1)
-# resource_attacks = resource_attacks.values.reshape(1, -1)
-# resource_messages = resource_messages.values.reshape(1, -1)
-# resource_trades = resource_trades.values.reshape(1, -1)
-# same_attacks = same_attacks.values.reshape(1, -1)
-# same_messages = same_messages.values.reshape(1, -1)
-# same_trades = same_trades.values.reshape(1, -1)
-
-
 print('Calculate Cosine Similarities......')
 cos_attacks_aa_common = cosine_similarity(aa_attacks, common_attacks)
 cos_attacks_aa_total = cosine_similarity(aa_attacks, total_attacks)
@@ -189,7 +153,6 @@ cos_trades_pref_same = cosine_similarity(pref_trades, same_trades)
 cos_trades_resource_same = cosine_similarity(resource_trades, same_trades)
 
 print('Calculate Overlap and Rank Biased Overlap......')
-
 aa_c_overlap_attacks, aa_c_rbo_attacks, aa_c_attacks_time_taken = calc_overlaps(aa_attacks, common_attacks)
 aa_t_overlap_attacks, aa_t_rbo_attacks, aa_t_attacks_time_taken = calc_overlaps(aa_attacks, total_attacks)
 aa_p_overlap_attacks, aa_p_rbo_attacks, aa_p_attacks_time_taken = calc_overlaps(aa_attacks, pref_attacks)
@@ -238,8 +201,8 @@ pref_r_overlap_trades, pref_r_rbo_trades, pref_r_trades_time_taken = calc_overla
 pref_s_overlap_trades, pref_s_rbo_trades, pref_s_trades_time_taken = calc_overlaps(pref_trades, same_trades)
 resource_s_overlap_trades, resource_s_rbo_trades, resource_s_trades_time_taken = calc_overlaps(resource_trades, same_trades)
 
-with open('index_comparison_worst_in_results.txt', 'a') as f:
-    f.write('WORST-IN RESULTS----------------\n')
+with open('index_comparison_best_in_results.txt', 'a') as f:
+    f.write('BEST-IN RESULTS----------------\n')
     f.write('Results: \n')
     
     f.write('ATTACKS SCORE COMPARISON-----------\n')

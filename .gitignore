@@ -1,1 +1,3 @@
 /data_users_moves/
+link_prediction/*.txt
+community_detection/*.txt

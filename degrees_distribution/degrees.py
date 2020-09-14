@@ -9,7 +9,7 @@ def read_from_neo4j_database():
     connection to database
     :return: graph
     """
-    graph = Graph('127.0.0.1', password='leomamao971')
+    graph = Graph('127.0.0.1', password='gomugomuno13')
     return graph
 
 

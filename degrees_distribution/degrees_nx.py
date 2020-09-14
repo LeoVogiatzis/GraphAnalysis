@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.append('../')
-from create_graphs.create_networkx import read_csv_files
+from create_graphs.create_networkx import __read_csv_files
 
 
 def graph_degrees_measures(G, labels):
@@ -183,7 +183,7 @@ def jac_sim(total_attacks, total_trades, total_messages):
 
 
 def main():
-    G, all_dfs, labels = read_csv_files()
+    G, g_undirected, all_dfs, labels = __read_csv_files()
     degree_measures_per_type(labels)
     total_attacks, total_trades, total_messages = degree_measures_per_type(labels)
     user_in_degree, user_out_degree, user_degree, best_active_user, best_passive_user, best_user, \

@@ -43,7 +43,8 @@ def read_csv_files():
         all_dfs = pd.concat([all_dfs, df])
     G = nx.from_pandas_edgelist(df=all_dfs, source='id1', target='id2', edge_attr=True,
                                 create_using=nx.DiGraph(name='Travian_Graph'))
-
+    x=1
+    # nx.set_node_attributes(G, comms, 'community')
     # pos = nx.spring_layout(G, k=10)
     # nx.draw(G, pos, with_labels=True)
     labels = {e: G.edges[e]['label'] for e in G.edges}
